@@ -1,0 +1,18 @@
+# 只忽略「本地产物」，不忽略交付物本身：SKILL.md / mcp_server.py / examples/ 都是要发布的
+__pycache__/
+*.py[cod]
+
+# 本地自测产物（XAUDaily_READINGS_FILE 指向的副本、curl 下来的快照、日志）
+readings.json
+latest.json
+brief.md
+*.local.json
+*.log
+
+# 虚拟环境与编辑器/系统噪音
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
