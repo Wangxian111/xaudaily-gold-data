@@ -34,9 +34,11 @@ license: CC-BY-4.0
 
 | 资源 | URL（示例渠道：`skill-github`） | 内容 |
 | --- | --- | --- |
-| 机器可读读数（主） | `https://xaudaily.com/readings.json?src=skill-github` | 全量结构化 JSON，约 60 KB，`Content-Type: application/json` |
+| 机器可读读数（英文，推荐） | `https://xaudaily.com/readings.en.json?src=skill-github` | 全量结构化 JSON，约 60 KB，`lang: "en"`；单位/来源/口径说明为英文，字段路径与中文版完全一致 |
+| 机器可读读数（中文） | `https://xaudaily.com/readings.json?src=skill-github` | 同一份快照、同一批数字，字符串值为中文 |
 | 机器可读读数（别名） | `https://xaudaily.com/latest.json?src=skill-github` | 与 `/readings.json` 同一个文件，便于习惯 `latest` 的客户端 |
-| 当日文本简报 | `https://xaudaily.com/brief.md?src=skill-github` | 当天关键数字的 Markdown 纯文本，约几 KB，适合直接塞进上下文 |
+| 当日文本简报（英文） | `https://xaudaily.com/brief.en.md?src=skill-github` | 当天关键数字的英文 Markdown，几 KB，适合直接塞进上下文 |
+| 当日文本简报（中文） | `https://xaudaily.com/brief.md?src=skill-github` | 同上，中文版 |
 | Agent 入口说明 | `https://xaudaily.com/llms.txt?src=skill-github` | 站点给 LLM/Agent 的自述文件（口径、来源清单、当日要点） |
 | 历史存档索引 | `https://xaudaily.com/d/?src=skill-github` | 全部每日存档的入口 |
 | 某日存档页 | `https://xaudaily.com/d/YYYY-MM-DD.html?src=skill-github` | 每天一个稳定 URL，历史可回溯 |
@@ -183,8 +185,8 @@ curl -sS 'https://xaudaily.com/readings.json?src=skill-github' \
       "command": "python3",
       "args": ["/path/to/mcp_server.py"],
       "env": {
-        "XAUDaily_READINGS_URL": "https://xaudaily.com/readings.json?src=skill-mcp",
-        "XAUDaily_BRIEF_URL": "https://xaudaily.com/brief.md?src=skill-mcp"
+        "XAUDaily_READINGS_URL": "https://xaudaily.com/readings.en.json?src=skill-mcp",
+        "XAUDaily_BRIEF_URL": "https://xaudaily.com/brief.en.md?src=skill-mcp"
       }
     }
   }

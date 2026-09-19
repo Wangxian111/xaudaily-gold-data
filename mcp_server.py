@@ -3,8 +3,9 @@
 """黄金读数 MCP server（xaudaily.com）—— 纯 Python 标准库实现，stdio 传输。
 
 【这是什么】
-    把 https://xaudaily.com/readings.json?src=skill-mcp（黄金宏观每日读数，schema
-    xaudaily.readings/v1）与 https://xaudaily.com/brief.md?src=skill-mcp（当日纯文本简报）
+    把 https://xaudaily.com/readings.en.json?src=skill-mcp（黄金宏观每日读数，英文版，schema
+    xaudaily.readings/v1）与 https://xaudaily.com/brief.en.md?src=skill-mcp（当日纯文本简报，英文版）
+    中文原版：/readings.json 与 /brief.md（同一份快照，字符串值为中文）。
     包装成 MCP（Model Context Protocol）工具的极简 server。只用 Python 3 标准库：本站的数据
     管道本来就是「纯 stdlib、零依赖」的设计，MCP server 也照这个来 —— 不用 pip install mcp、
     不用虚拟环境，一个 .py 复制过去就能跑，长期放着也不会因为依赖腐烂而失效。
@@ -29,8 +30,8 @@
           "command": "python3",
           "args": ["/absolute/path/to/mcp_server.py"],
           "env": {
-            "XAUDaily_READINGS_URL": "https://xaudaily.com/readings.json?src=skill-mcp",
-            "XAUDaily_BRIEF_URL": "https://xaudaily.com/brief.md?src=skill-mcp"
+            "XAUDaily_READINGS_URL": "https://xaudaily.com/readings.en.json?src=skill-mcp",
+            "XAUDaily_BRIEF_URL": "https://xaudaily.com/brief.en.md?src=skill-mcp"
           }
         }
       }
@@ -38,8 +39,8 @@
     Windows 上把 command 写成解释器的完整路径（例如 py.exe 或 python.exe 的位置）最稳。
 
 【环境变量】
-    XAUDaily_READINGS_URL   覆盖读数端点；默认值已带 ?src=skill-mcp
-    XAUDaily_BRIEF_URL      覆盖简报端点；默认值已带 ?src=skill-mcp
+    XAUDaily_READINGS_URL   覆盖读数端点；默认值＝英文端点 /readings.en.json，且已带 ?src=skill-mcp
+    XAUDaily_BRIEF_URL      覆盖简报端点；默认值＝英文端点 /brief.en.md，且已带 ?src=skill-mcp
     XAUDaily_READINGS_FILE  指向本地一份 readings.json 副本，用于离线自测（设了就优先读文件）
     XAUDaily_TIMEOUT        单次 HTTP 超时秒数，默认 20
 
@@ -77,8 +78,11 @@ ATTRIBUTION_EN = (
     "Do not republish this dataset as your own; contact xaudaily@163.com for commercial use."
 )
 
-DEFAULT_READINGS_URL = "https://xaudaily.com/readings.json?src=skill-mcp"
-DEFAULT_BRIEF_URL = "https://xaudaily.com/brief.md?src=skill-mcp"
+# 默认走**英文端点**：MCP 的消费方以英文 Agent 为主，而中文载荷里的单位/来源/meta 是中文，
+# 英文 Agent 引用时会把中文夹进英文回答。中文原版仍在 /readings.json 与 /brief.md，
+# 想指回去设 XAUDaily_READINGS_URL 即可（两个端点同快照、同数字）。
+DEFAULT_READINGS_URL = "https://xaudaily.com/readings.en.json?src=skill-mcp"
+DEFAULT_BRIEF_URL = "https://xaudaily.com/brief.en.md?src=skill-mcp"
 DEFAULT_TIMEOUT = 20.0
 
 # 兜底上限：防止畸形/被代理改写的超大响应把客户端上下文灌爆。

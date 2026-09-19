@@ -3,7 +3,9 @@
 给 AI Agent 用的**黄金宏观数据**接入包：一份 Agent Skill 说明书 + 一个零依赖的 MCP server。
 
 - 数据源：[xaudaily.com](https://xaudaily.com/)（品牌「黄金读数 / Gold Data Reading · XAU Daily」），纯静态黄金宏观数据仪表盘
-- 端点：`https://xaudaily.com/readings.json?src=skill-github`（JSON，schema `xaudaily.readings/v1`）
+- 端点（英文）：`https://xaudaily.com/readings.en.json?src=skill-github`（JSON，schema `xaudaily.readings/v1`）
+- 端点（中文）：`https://xaudaily.com/readings.json?src=skill-github` —— **同一份快照、同一批数字**，
+  字段路径完全一致，只是字符串值（单位/来源/口径说明）为中文；英文简报 `/brief.en.md`，中文简报 `/brief.md`
 - 许可：**CC-BY-4.0**（署名 + 附链接）
 
 ```
@@ -60,8 +62,8 @@ Agent 会读它的 frontmatter（`name` / `description`）判断何时该用：�
       "command": "python3",
       "args": ["/absolute/path/to/mcp_server.py"],
       "env": {
-        "XAUDaily_READINGS_URL": "https://xaudaily.com/readings.json?src=skill-mcp",
-        "XAUDaily_BRIEF_URL": "https://xaudaily.com/brief.md?src=skill-mcp"
+        "XAUDaily_READINGS_URL": "https://xaudaily.com/readings.en.json?src=skill-mcp",
+        "XAUDaily_BRIEF_URL": "https://xaudaily.com/brief.en.md?src=skill-mcp"
       }
     }
   }
@@ -76,8 +78,8 @@ python3 mcp_server.py            # 它会等待 stdin 上的 JSON-RPC 报文
 
 | 环境变量 | 默认值 | 用途 |
 | --- | --- | --- |
-| `XAUDaily_READINGS_URL` | `https://xaudaily.com/readings.json?src=skill-mcp` | 覆盖读数端点（默认值已带渠道参数） |
-| `XAUDaily_BRIEF_URL` | `https://xaudaily.com/brief.md?src=skill-mcp` | 覆盖简报端点 |
+| `XAUDaily_READINGS_URL` | `https://xaudaily.com/readings.en.json?src=skill-mcp` | 覆盖读数端点（默认值＝英文端点，已带渠道参数） |
+| `XAUDaily_BRIEF_URL` | `https://xaudaily.com/brief.en.md?src=skill-mcp` | 覆盖简报端点（默认值＝英文端点） |
 | `XAUDaily_READINGS_FILE` | 空 | 指向本地一份 `readings.json` 副本，用于**离线自测**（设了就优先读文件，不出网） |
 | `XAUDaily_TIMEOUT` | `20` | 单次 HTTP 超时秒数 |
 
