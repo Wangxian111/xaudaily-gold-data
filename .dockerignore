@@ -1,0 +1,14 @@
+# Keep the image build context tiny and reproducible.
+#
+# The Dockerfile only copies mcp_server.py, so nothing else is needed. Excluding
+# the rest also means a docs/example edit never invalidates the build cache.
+
+.git
+.gitignore
+__pycache__/
+*.pyc
+examples/
+README.md
+SKILL.md
+WIDGET.md
+LICENSE
