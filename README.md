@@ -1,4 +1,84 @@
-# 黄金读数 Agent 分发包 · Gold Data Reading for AI Agents
+# Gold Data Reading for AI Agents · 黄金读数 Agent 分发包
+
+[![Wangxian111/xaudaily-gold-data MCP server](https://glama.ai/mcp/servers/Wangxian111/xaudaily-gold-data/badges/score.svg)](https://glama.ai/mcp/servers/Wangxian111/xaudaily-gold-data)
+
+## English
+
+An [Agent Skill](SKILL.md) plus a **zero-dependency MCP server** that give AI agents daily gold and macro
+readings from [xaudaily.com](https://xaudaily.com/) — numbers an agent can actually cite.
+
+**Why not just let the agent search the web?** Every field carries its own `source` and `asOf`/`date`, so a
+citation can be checked rather than trusted. When an upstream source fails, the site keeps the last good value
+and flags the field `stale: true` instead of silently serving an old number. And the figures are the same ones
+the site renders — same snapshot, same code path — so the JSON and the page can never disagree.
+
+**Two tools, over stdio:**
+
+| Tool | Returns |
+|---|---|
+| `get_gold_readings` | Full JSON readings (schema `xaudaily.readings/v1`), optionally trimmed with `fields=[...]` |
+| `get_gold_daily_brief` | Today's headline numbers as Markdown (a few KB) |
+
+**What's inside:** COMEX gold and Shanghai Au99.99 (with a ~30-minute live tick), US CPI / core PCE / nonfarm
+payrolls / PPI, DXY, Treasury 10Y and 30Y yields, VIX, SPDR gold ETF holdings, the fed funds rate and
+Polymarket odds for the next FOMC decision, IMF central-bank gold buying, Brent/WTI crude, US debt, plus a
+rule-based gold driver score and event estimates — one request, about 60 KB, instead of stitching together a
+dozen sources.
+
+**Updated twice a day** (06:30 and 22:40 JST) with a ~30-minute gold tick. These are *daily readings, not a
+real-time feed* — please don't describe them as real-time or guaranteed accurate. The data is not investment
+advice.
+
+**Files:** `SKILL.md` (the skill), `mcp_server.py` (the server — standard library only), `Dockerfile` (for
+container-based catalogs), `glama.json`, `examples/` (copy-paste curl and Python), `WIDGET.md` (an embeddable
+gold badge).
+
+### Install
+
+**As an MCP server.** One Python file, nothing to `pip install`:
+
+```json
+{
+  "mcpServers": {
+    "xaudaily": {
+      "command": "python3",
+      "args": ["/absolute/path/to/mcp_server.py"],
+      "env": {
+        "XAUDaily_READINGS_URL": "https://xaudaily.com/readings.en.json?src=skill-mcp",
+        "XAUDaily_BRIEF_URL": "https://xaudaily.com/brief.en.md?src=skill-mcp"
+      }
+    }
+  }
+}
+```
+
+**With Docker** (the same image MCP catalogs build for introspection):
+
+```bash
+docker build -t xaudaily-mcp .
+docker run -i --rm xaudaily-mcp        # then speak JSON-RPC on stdin
+```
+
+**As an Agent Skill:** copy this directory (or just `SKILL.md`) into your runtime's skills directory.
+
+### Endpoints
+
+- English payload: `https://xaudaily.com/readings.en.json?src=skill-github`
+- Chinese payload: `https://xaudaily.com/readings.json?src=skill-github` — **same snapshot, same numbers**, same
+  field paths; only the string values (units, sources, caveats) are Chinese
+- Briefs: `/brief.en.md` and `/brief.md`
+
+### License and attribution
+
+Data is **CC BY 4.0**. **Attribution with a link is required** — e.g.
+*Source: [Gold Data Reading · XAU Daily](https://xaudaily.com/)*. Please don't repackage the dataset as your
+own. For commercial use or redistribution, contact xaudaily@163.com.
+
+*中文说明见下方 ↓*
+
+---
+
+## 中文说明
 
 给 AI Agent 用的**黄金宏观数据**接入包：一份 Agent Skill 说明书 + 一个零依赖的 MCP server。
 
@@ -12,8 +92,10 @@
 skill-repo/
 ├── SKILL.md            # Agent Skill：字段说明、信封约定、常见坑（中文为主，关键段落英文）
 ├── mcp_server.py       # MCP server：纯 Python 标准库，stdio 传输，两个工具
-├── README.md           # 本文件（给人看）
-├── LICENSE             # CC-BY-4.0 声明
+├── Dockerfile          # 极简镜像，给 Glama 这类按容器做 introspection 的目录用
+├── glama.json          # 声明维护者（Glama 的收录元数据）
+├── README.md           # 本文件（英文在前，中文见本节）
+├── LICENSE             # CC-BY-4.0 完整法律文本
 ├── WIDGET.md           # 可嵌入金价徽标的嵌入说明（给你的网站/README 用）
 └── examples/
     ├── curl.md         # 可直接复制运行的 curl 示例
@@ -88,6 +170,15 @@ python3 mcp_server.py            # 它会等待 stdin 上的 JSON-RPC 报文
 - 未知方法返回 JSON-RPC error（`-32601`），不会崩；`notifications/*` 一律不响应。
 - 网络超时、HTTP 非 200、JSON 解析失败，都转成**结构化的 tool error 结果**（`isError: true` + `kind`/`detail`/`hint`），进程照常活着 —— 一次网络抖动不该让 Agent 的整个会话失去这个工具。
 - stdout 上只有 JSON-RPC 报文；日志一律走 stderr。
+
+### 方式三：作为 Docker 容器
+
+仓库根目录的 `Dockerfile` 就是给容器化场景用的（Glama 这类目录按它构建镜像、启动进程、读 `tools/list` 做 introspection）：
+
+```bash
+docker build -t xaudaily-mcp .
+docker run -i --rm xaudaily-mcp        # 然后往 stdin 写 JSON-RPC
+```
 
 ## 示例
 
