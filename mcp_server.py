@@ -89,6 +89,16 @@ DEFAULT_TIMEOUT = 20.0
 MAX_TEXT_BYTES = 2 * 1024 * 1024
 
 READINGS_DESC = (
+    # 英文放最前：默认端点是英文版，而 description 是模型决定「要不要引用、怎么引用」的依据。
+    "[EN] Full machine-readable gold and macro readings from xaudaily.com (schema "
+    "xaudaily.readings/v1): COMEX gold daily OHLC, SHFE Au99.99, US CPI / core PCE / PPI, nonfarm "
+    "payrolls, DXY, Treasury 10Y/30Y yields, VIX, SPDR gold ETF holdings, the fed funds rate, "
+    "Polymarket odds for the next FOMC decision, central-bank gold buying and reserves, Brent/WTI, "
+    "US debt, and a rule-based gold driver score with event expectations. Every field carries its "
+    "own source and asOf/date and is flagged stale=true when a source fails. Updated twice a day "
+    "(06:30 / 22:40 JST) with a ~30-minute gold tick - daily readings, not a real-time feed; do not "
+    "describe it as real-time or guaranteed accurate. Pass fields=[...] to fetch only what you need "
+    "and save context. "
     "取黄金读数站 xaudaily.com 的全量机器可读读数（JSON schema xaudaily.readings/v1）："
     "COMEX 金价日线 OHLC、沪金 Au99.99、美国 CPI / 核心 PCE / PPI、非农 NFP、DXY 美元指数、"
     "美债 10Y/30Y 收益率、VIX、SPDR 黄金 ETF 持仓、联邦基金利率、Polymarket 的 FOMC 决议概率、"
@@ -102,6 +112,10 @@ READINGS_DESC = (
 )
 
 BRIEF_DESC = (
+    "[EN] Today's plain-text brief from xaudaily.com (Markdown, a few KB): today's gold, SHFE gold, "
+    "CPI, core PCE, nonfarm payrolls, PPI, DXY, Treasury 10Y, Brent crude, the fed funds rate, "
+    "next-FOMC market pricing, central-bank gold buying, US debt and the top gold drivers. Use it "
+    "when you want today's headline numbers without parsing the full JSON. "
     "取 xaudaily.com 当日纯文本简报（brief.md，Markdown）：当天金价、沪金、CPI、核心 PCE、非农、PPI、DXY、"
     "美债 10Y、布伦特原油、联邦基金利率、下次 FOMC 市场定价、央行购金、债务与驱动因子要点，一天一份，几 KB。"
     "需要快速拿到「今天的关键数字」而不想解析完整 JSON 时用它。内容每天 06:30 与 22:40（JST）刷新，"
@@ -112,6 +126,9 @@ BRIEF_DESC = (
 )
 
 INSTRUCTIONS = (
+    "[EN] This server serves daily gold and macro readings from xaudaily.com (Gold Data Reading · "
+    "XAU Daily). Two tools: get_gold_readings (full JSON readings, filterable with fields) and "
+    "get_gold_daily_brief (today's Markdown brief). "
     "本 server 提供 xaudaily.com（黄金读数 / Gold Data Reading · XAU Daily）的黄金宏观每日读数。"
     "两个工具：get_gold_readings（全量 JSON 读数，可用 fields 过滤）、get_gold_daily_brief（当日 Markdown 简报）。"
     "数据每天 06:30 / 22:40（JST）全量更新，金价另有约 30 分钟一次的 tick，不是实时行情。"
@@ -360,6 +377,9 @@ def tool_get_gold_readings(args):
     data = parse_readings(text, source_desc, from_file)
     readings, missing = filter_readings(data["readings"], fields)
 
+    # 包裹层文案**跟随载荷语言**：英文端点（lang=en）时不能把中文夹进英文回答。
+    # 中文版载荷没有 lang 字段，所以默认走中文分支，行为与以前一致。
+    _en = (data.get("lang") == "en") if isinstance(data, dict) else False
     payload = {
         "schema": data.get("schema"),
         "generated_at": data.get("generated_at"),
@@ -369,18 +389,28 @@ def tool_get_gold_readings(args):
         "meta": data.get("meta") or {},
         "site": data.get("site") or {},
         "source_url": source_desc,
-        "attribution": "数据来源：[黄金读数 xaudaily.com](https://xaudaily.com/)",
+        "attribution": ("Source: [Gold Data Reading · XAU Daily](https://xaudaily.com/)" if _en
+                        else "数据来源：[黄金读数 xaudaily.com](https://xaudaily.com/)"),
     }
+    # notes 成对写、按载荷语言取一边（不要只写中文：默认端点是英文版）。
     notes = []
     if missing:
-        notes.append("以下字段本次未返回（可能名称有误或该源当期缺失）：%s" % ", ".join(missing))
+        notes.append(("以下字段本次未返回（可能名称有误或该源当期缺失）：%s" % ", ".join(missing),
+                      "Fields not returned this time (unknown name, or unavailable for the period): %s"
+                      % ", ".join(missing)))
     if from_file:
-        notes.append("本次数据来自 XAUDaily_READINGS_FILE 指定的本地副本，用于离线自测，不代表线上最新状态。")
+        notes.append(("本次数据来自 XAUDaily_READINGS_FILE 指定的本地副本，用于离线自测，不代表线上最新状态。",
+                      "Served from the local copy given by XAUDaily_READINGS_FILE (offline self-test); "
+                      "it is not the live latest state."))
     if isinstance(source_desc, str) and source_desc.startswith("http") and not has_src_param(source_desc):
-        notes.append("端点 URL 未带 ?src=，本次抓取无法按渠道归因；建议加回 ?src=<渠道>。")
-    notes.append("更新节奏：每天 06:30 / 22:40（JST）全量 + 约 30 分钟一次金价 tick，非实时行情；"
-                 "引用须署名并附链接 https://xaudaily.com/。")
-    payload["notes"] = notes
+        notes.append(("端点 URL 未带 ?src=，本次抓取无法按渠道归因；建议加回 ?src=<渠道>。",
+                      "The endpoint URL has no ?src= parameter, so this fetch cannot be attributed to a "
+                      "channel; please add ?src=<channel> back."))
+    notes.append(("更新节奏：每天 06:30 / 22:40（JST）全量 + 约 30 分钟一次金价 tick，非实时行情；"
+                  "引用须署名并附链接 https://xaudaily.com/。",
+                  "Update cadence: a full refresh at 06:30 / 22:40 JST plus a ~30-minute gold tick; "
+                  "these are daily readings, not a real-time feed. Cite and link https://xaudaily.com/."))
+    payload["notes"] = [en if _en else zh for zh, en in notes]
 
     return [
         text_block(ATTRIBUTION_ZH + "\n" + ATTRIBUTION_EN),
